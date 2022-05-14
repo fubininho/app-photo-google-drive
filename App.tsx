@@ -12,10 +12,9 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-// import * as Google from 'expo-google-sign-in';
 import * as Google from 'expo-auth-session/providers/google';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import {googleApi} from '../app-photo-google-drive/api/request';
+import {googleApi} from '../app-photo-google-drive/api/request';
 
 export default function App() {
 
@@ -23,19 +22,34 @@ export default function App() {
 
   const [hasGalleryPermission, setHasGalleryPermission] = React.useState<null | boolean>(null);
 
-  // Google
+  // Tutorial de login no google: 
+  // Login no Google https://docs.expo.dev/guides/authentication/#google
+  // Passo 1: criar app na google https://console.developers.google.com/apis/credentials
+  // Passo 2: seguir os passos da documentação do expo para criar as client keys https://docs.expo.dev/guides/authentication/#google
+    // Escopos mínimos das client keys: ['openid', 'https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
+  // Passo 3: usar esse vío para fazer o login https://www.youtube.com/watch?v=hmZm_jPvWWM
+  
   const [accessToken, setAccessToken] = React.useState();
   const [userInfo, setUserInfo] = React.useState();
+  // requesição de login no google
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com'
   });
 
+  // conseguindo o access token
   React.useEffect(() => {
     if (response?.type === 'success'){
       setAccessToken(response.authentication.accessToken)
+      setAsyncStorage('google_access_token',accessToken)
+      setAsyncStorage('expo_client_id','330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com')
     }
   }, [response])
 
+  async function setAsyncStorage(keyword:string,accessToken:string) {
+    await AsyncStorage.setItem(keyword, accessToken);
+  }
+
+  // Conseguir as informações do usuário
   async function getUserData() {
     let userInfoResponse = await fetch("https://www.googleapis.com/userinfo/v2/me",{
       headers: { Authorization: `Bearer ${accessToken}`}
@@ -46,6 +60,7 @@ export default function App() {
     })
   }
 
+  // Função para ver se o login funcionou
   function showUserInfo(){
     if(userInfo){
       return (
@@ -62,90 +77,66 @@ export default function App() {
 
   async function handleShare() {
     console.log("CODAR AQUI:");
-    // login
-    // https://docs.expo.dev/guides/authentication/#google
-    // Passo 1: criar app na google https://console.developers.google.com/apis/credentials
-    // Passo 2: seguir os passos da documentação do expo https://docs.expo.dev/guides/authentication/#google
-    // Enforces minimum scopes to ['openid', 'https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email']
-    // const [request, response, promptAsync] = Google.useAuthRequest({
-    //   expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com'
-    // });
-    // console.log(response)
-
     // image -> googleDrive;
     // CODAR AQUI:
+    // se já tem o accessToken
+    if(accessToken){
+      uploadToDrive();
+    }
+    // caso contrário, pedir para fazer o login
+    else{
+      console.log("Faça login")
+    }
   }
 
-  // async function uploadToDrive() {
-  //   try {
-  //     // const uri = Platform.OS === 'android' ? route.params.image : route.params.image.replace('file://', '');
-  //     //logar o usurio no google
-  //     const accessToken = await loginGoogle();
-  //     await AsyncStorage.setItem('google_access_token', accessToken);
+  async function uploadToDrive() {
+    try {
+      // const uri = Platform.OS === 'android' ? route.params.image : route.params.image.replace('file://', '');
+      console.log("Oi")
+      //fazer um album
+      // falta conseguir desbloquear o escopo confidencial
+      const album = await googleApi.post('/albums',{
+        "album": {
+          "title": "new-album-title"
+        }                
+      })
+      console.log("Tudo bem?")
 
-  //     //fazer um album
-  //     const album = await googleApi.post('/albums',{
-  //       "album": {
-  //         "title": "new-album-title"
-  //       }                
-  //     })
+      // preciso acessar a photo, não só o uri
+      // const getUploadToken = (photo) => {
+      //   googleApi.post('/uploads',{
+      //     photo
+      //   }, {
+      //     headers: {
+      //       'Content-Type': 'application/octet-stream',
+      //       'X-Goog-Upload-File-Name': "name",
+      //       'X-Goog-Upload-Protocol': 'raw'
+      //     }
+      //   })
+      // }
 
-  //     // preciso acessar a photo, não só o uri
-  //     const getUploadToken = (photo) => {
-  //       googleApi.post('/uploads',{
-  //         photo
-  //       }, {
-  //         headers: {
-  //           'Content-Type': 'application/octet-stream',
-  //           'X-Goog-Upload-File-Name': "name",
-  //           'X-Goog-Upload-Protocol': 'raw'
-  //         }
-  //       })
-  //     }
+      //upar imagem nesse album
+      // const photo = await googleApi.post('/mediaItems:batchCreate',{
+      //   "albumId": album["id"],
+      //   "newMediaItems": [
+      //     {
+      //       "description": "Event Photo",
+      //       "simpleMediaItem": {
+      //         "uploadToken": getUploadToken
+      //       }
+      //     }
+      //   ]
+      // })      
+    } catch (err: any) {
+      if (err.response) {
+        console.log(err.response);
 
-  //     //upar imagem nesse album
-  //     const photo = await googleApi.post('/mediaItems:batchCreate',{
-  //       "albumId": album["id"],
-  //       "newMediaItems": [
-  //         {
-  //           "description": "Event Photo",
-  //           "simpleMediaItem": {
-  //             "uploadToken": getUploadToken
-  //           }
-  //         }
-  //       ]
-  //     })
-
-
-      
-  //   } catch (err: any) {
-  //     if (err.response) {
-  //       console.log(err.response);
-
-  //       // throwErrorMessage(err.response.data.error);
-  //     } else {
-  //       console.log(err)
-  //     }
-  //   }
-  // }
-
-  // async function loginGoogle() {
-  //   // First- obtain access token from Expo's Google API
-  //   // Falta fazer a configuração para o login https://developers.google.com/photos/library/guides/get-started
-  //   // qual é o config
-  //   const { type, accessToken, user } = await Google.logInAsync({
-  //     clientId: "android_client_id",
-  //     scopes: ['profile', 'email'],
-  //   });
-
-  //   if (type === 'success') {
-  //     // Then you can use the Google REST API
-  //     return accessToken;
-  //     // let userInfoResponse = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-  //     //   headers: { Authorization: Bearer ${accessToken} },
-  //     // });
-  //   }
-  // }
+        // throwErrorMessage(err.response.data.error);
+      } else {
+        console.log(err)
+      }
+    }
+  }
 
 
   async function pickImage() {
