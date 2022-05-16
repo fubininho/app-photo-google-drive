@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -33,7 +34,8 @@ export default function App() {
   const [userInfo, setUserInfo] = React.useState();
   // requesição de login no google
   const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com'
+    expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com',
+    scopes: ['https://www.googleapis.com/auth/photoslibrary','https://www.googleapis.com/auth/photoslibrary.appendonly','https://www.googleapis.com/auth/photoslibrary.sharing']
   });
 
   // conseguindo o access token
@@ -41,7 +43,6 @@ export default function App() {
     if (response?.type === 'success'){
       setAccessToken(response.authentication.accessToken)
       setAsyncStorage('google_access_token',accessToken)
-      setAsyncStorage('expo_client_id','330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com')
     }
   }, [response])
 
@@ -91,42 +92,46 @@ export default function App() {
 
   async function uploadToDrive() {
     try {
-      // const uri = Platform.OS === 'android' ? route.params.image : route.params.image.replace('file://', '');
+      console.log(image)
+      const uri = image?.uri
       console.log("Oi")
       //fazer um album
-      // falta conseguir desbloquear o escopo confidencial
+      // permitir aceesso do app à google photos api: https://console.developers.google.com/apis/api/photoslibrary.googleapis.com/overview?project=330310690010
+      // criar usuário teste:
       const album = await googleApi.post('/albums',{
         "album": {
           "title": "new-album-title"
         }                
       })
       console.log("Tudo bem?")
-
+      
       // preciso acessar a photo, não só o uri
-      // const getUploadToken = (photo) => {
-      //   googleApi.post('/uploads',{
-      //     photo
-      //   }, {
-      //     headers: {
-      //       'Content-Type': 'application/octet-stream',
-      //       'X-Goog-Upload-File-Name': "name",
-      //       'X-Goog-Upload-Protocol': 'raw'
-      //     }
-      //   })
-      // }
+      // TODO: Falta só arrumar isso aqui mesmo
+      const getUploadToken = await googleApi.post('/uploads',{
+          image
+        }, {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Goog-Upload-File-Name': "name",
+            'X-Goog-Upload-Protocol': 'raw'
+          }
+        })
+      console.log("Sim e você?")
 
       //upar imagem nesse album
-      // const photo = await googleApi.post('/mediaItems:batchCreate',{
-      //   "albumId": album["id"],
-      //   "newMediaItems": [
-      //     {
-      //       "description": "Event Photo",
-      //       "simpleMediaItem": {
-      //         "uploadToken": getUploadToken
-      //       }
-      //     }
-      //   ]
-      // })      
+      const photo = await googleApi.post('/mediaItems:batchCreate',{
+        "albumId": album["id"],
+        "newMediaItems": [
+          {
+            "description": "Event Photo",
+            "simpleMediaItem": {
+              "uploadToken": getUploadToken
+            }
+          }
+        ]
+      }) 
+      console.log("Também")
+
     } catch (err: any) {
       if (err.response) {
         console.log(err.response);

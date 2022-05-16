@@ -11,7 +11,6 @@ googleApi.interceptors.request.use(
     const expo_client_id = await AsyncStorage.getItem('expo_client_id');
     if(token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // config.headers.Authorization = `Bearer ${expo_client_id}`;
     }
     config.headers['Content-Type'] ='application/json';
     return config;
