@@ -8,7 +8,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Platform
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Google from 'expo-auth-session/providers/google';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {googleApi} from '../app-photo-google-drive/api/request';
+import * as FileSystem from 'expo-file-system';
 
 export default function App() {
 
@@ -43,6 +43,7 @@ export default function App() {
     if (response?.type === 'success'){
       setAccessToken(response.authentication.accessToken)
       setAsyncStorage('google_access_token',accessToken)
+      console.log(response)
     }
   }, [response])
 
@@ -97,18 +98,20 @@ export default function App() {
       console.log("Oi")
       //fazer um album
       // permitir aceesso do app à google photos api: https://console.developers.google.com/apis/api/photoslibrary.googleapis.com/overview?project=330310690010
-      // criar usuário teste:
+      // criar usuário teste
       const album = await googleApi.post('/albums',{
         "album": {
-          "title": "new-album-title"
-        }                
+          "title": "new-album"
+        },
+        // "isWriteable": true
       })
       console.log("Tudo bem?")
       
       // preciso acessar a photo, não só o uri
       // TODO: Falta só arrumar isso aqui mesmo
+      const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
       const getUploadToken = await googleApi.post('/uploads',{
-          image
+          base64
         }, {
           headers: {
             'Content-Type': 'application/octet-stream',
@@ -116,7 +119,7 @@ export default function App() {
             'X-Goog-Upload-Protocol': 'raw'
           }
         })
-      console.log("Sim e você?")
+      console.log("Sim e você?", getUploadToken['data'])
 
       //upar imagem nesse album
       const photo = await googleApi.post('/mediaItems:batchCreate',{
@@ -125,22 +128,27 @@ export default function App() {
           {
             "description": "Event Photo",
             "simpleMediaItem": {
-              "uploadToken": getUploadToken
+              "fileName": "filename",
+              "uploadToken": getUploadToken['data']
             }
           }
         ]
       }) 
-      console.log("Também")
+      console.log("Também",photo)
 
     } catch (err: any) {
       if (err.response) {
-        console.log(err.response);
+        console.log(err.response.data.error);
 
         // throwErrorMessage(err.response.data.error);
       } else {
         console.log(err)
       }
     }
+  }
+
+  async function logoutGoogle() {
+    
   }
 
 
@@ -193,6 +201,10 @@ export default function App() {
               title={accessToken? "Get User Data":"Login"}
               onPress={accessToken ? getUserData: () => {promptAsync({showInRevents:true}) }}
             />
+            {/* <Button
+              title={accessToken? "Logout"}
+              onPress={accessToken ? logoutGoogle: () => {promptAsync({showInRevents:true}) }}
+            /> */}
           </View>
         </View>
 
