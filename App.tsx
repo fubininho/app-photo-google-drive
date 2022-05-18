@@ -35,7 +35,7 @@ export default function App() {
   // requesição de login no google
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com',
-    scopes: ['https://www.googleapis.com/auth/photoslibrary','https://www.googleapis.com/auth/photoslibrary.appendonly','https://www.googleapis.com/auth/photoslibrary.sharing']
+    scopes: ['https://www.googleapis.com/auth/photoslibrary','https://www.googleapis.com/auth/photoslibrary.appendonly','https://www.googleapis.com/auth/photoslibrary.sharing'],
   });
 
   // conseguindo o access token
@@ -109,9 +109,11 @@ export default function App() {
       
       // preciso acessar a photo, não só o uri
       // TODO: Falta só arrumar isso aqui mesmo
-      const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
+      // const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
+      const response = await fetch(image.uri)
+      const blob = await response.blob()
       const getUploadToken = await googleApi.post('/uploads',{
-          base64
+          blob
         }, {
           headers: {
             'Content-Type': 'application/octet-stream',
@@ -199,7 +201,7 @@ export default function App() {
             {showUserInfo()} 
             <Button
               title={accessToken? "Get User Data":"Login"}
-              onPress={accessToken ? getUserData: () => {promptAsync({showInRevents:true}) }}
+              onPress={accessToken ? getUserData: () => {promptAsync({showInRecents:true}) }}
             />
             {/* <Button
               title={accessToken? "Logout"}
