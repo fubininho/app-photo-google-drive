@@ -16,6 +16,9 @@ import * as Google from 'expo-auth-session/providers/google';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {googleApi} from '../app-photo-google-drive/api/request';
 import * as FileSystem from 'expo-file-system';
+// import { useAutoDiscovery } from 'expo-auth-session';
+// import { Buffer } from 'buffer'
+// const RFNS = require('react-native-fs')
 
 export default function App() {
 
@@ -33,10 +36,14 @@ export default function App() {
   const [accessToken, setAccessToken] = React.useState();
   const [userInfo, setUserInfo] = React.useState();
   // requesição de login no google
+  // const discovery = useAutoDiscovery('https://accounts.google.com');
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com',
+    usePKCE: false,
+    prompt: 'consent',
     scopes: ['https://www.googleapis.com/auth/photoslibrary','https://www.googleapis.com/auth/photoslibrary.appendonly','https://www.googleapis.com/auth/photoslibrary.sharing'],
-  });
+    // redirectUri: "exp://127.0.0.1:19000/",
+  }, );
 
   // conseguindo o access token
   React.useEffect(() => {
@@ -110,19 +117,47 @@ export default function App() {
       // preciso acessar a photo, não só o uri
       // TODO: Falta só arrumar isso aqui mesmo
       // const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
-      const response = await fetch(image.uri)
-      const blob = await response.blob()
+      // let your_bytes = Buffer.from(base64, "base64");
+      // const response = await fetch(image.uri)
+      // const blob = await response.blob()
+      // const reader = new FileReader()
+      // reader.readAsArrayBuffer()
+      // var base64str = FileSystem.read .readFileSync('1.jpg', 'base64');
+      // const blob = await new Promise((resolve, reject) => {
+      //   const xhr = new XMLHttpRequest();
+      //   xhr.onload = function () {
+      //     resolve(xhr.response);
+      //   };
+      //   xhr.onerror = function (e) {
+      //     reject(new TypeError("Network request failed"));
+      //   };
+      //   xhr.responseType = "blob";
+      //   xhr.open("GET", image.uri, true);
+      //   xhr.send(null);
+      // });
+      // // console.log(blob)
+      // const blob = RFNS.readFile(image.uri, "base64").then(data => {
+      //   // binary data
+      //   console.log(data);
+      //   return data
+      // });
+      console.log(image.uri)
+      const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
+      console.log(base64)
+
       const getUploadToken = await googleApi.post('/uploads',{
-          blob
+          base64,
         }, {
           headers: {
             'Content-Type': 'application/octet-stream',
-            'X-Goog-Upload-File-Name': "name",
-            'X-Goog-Upload-Protocol': 'raw'
+            'X-Goog-Upload-File-Name': "name.jpg",
+            'X-Goog-Upload-Protocol': 'raw',
+            'X-Goog-Upload-Content-Type': 'image/jpeg'
           }
         })
-      console.log("Sim e você?", getUploadToken['data'])
-
+      // blob.close();
+      console.log("Sim e você?", getUploadToken['text'])
+      console.log(getUploadToken)
       //upar imagem nesse album
       const photo = await googleApi.post('/mediaItems:batchCreate',{
         "albumId": album["id"],
@@ -131,7 +166,7 @@ export default function App() {
             "description": "Event Photo",
             "simpleMediaItem": {
               "fileName": "filename",
-              "uploadToken": getUploadToken['data']
+              "uploadToken": getUploadToken
             }
           }
         ]
