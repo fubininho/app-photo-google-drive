@@ -100,7 +100,7 @@ export default function App() {
 
   async function uploadToDrive() {
     try {
-      console.log(image)
+      // console.log(image)
       const uri = image?.uri
       console.log("Oi")
       //fazer um album
@@ -109,7 +109,10 @@ export default function App() {
       const album = await googleApi.post('/albums',{
         "album": {
           "title": "new-album"
-        },
+        }}, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
         // "isWriteable": true
       })
       console.log("Tudo bem?")
@@ -141,22 +144,57 @@ export default function App() {
       //   console.log(data);
       //   return data
       // });
-      console.log(image.uri)
-      const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
-      console.log(base64)
+      const getBlobFroUri = async (uri) => {
+        const blob = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.onload = function () {
+            resolve(xhr.response);
+          };
+          xhr.onerror = function (e) {
+            reject(new TypeError("Network request failed"));
+          };
+          xhr.responseType = "blob";
+          xhr.open("GET", uri, true);
+          xhr.send(null);
+        });
 
-      const getUploadToken = await googleApi.post('/uploads',{
-          base64,
-        }, {
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'X-Goog-Upload-File-Name': "name.jpg",
-            'X-Goog-Upload-Protocol': 'raw',
-            'X-Goog-Upload-Content-Type': 'image/jpeg'
-          }
-        })
+        return blob;
+      };
+      const blob = getBlobFroUri(image?.uri)
+      console.log(blob)
+      // const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
+      // console.log(base64)
+
+      // const getUploadToken = await googleApi.post('/uploads',{
+      //     "media-binary-data": base64,
+      //   }, {
+      //     headers: {
+      //       'Content-Type': 'application/octet-stream',
+      //       'X-Goog-Upload-File-Name': "name.jpg",
+      //       'X-Goog-Upload-Protocol': 'raw',
+      //       'X-Goog-Upload-Content-Type': 'image/jpeg'
+      //     }
+      //   })
+
+      const getUploadToken = await fetch('https://photoslibrary.googleapis.com/v1/uploads',{
+        method: 'POST',
+        body: {
+          'media-binary-data': blob,
+        },
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          // 'X-Goog-Upload-File-Name': "name.jpg",
+          'X-Goog-Upload-Protocol': 'raw',
+          'X-Goog-Upload-Content-Type': 'image/jpeg',
+          'Authorization': 'Bearer ' + accessToken
+        },
+      })
+      // .then(response => response.json)
+      // .then(json => console.log(json))
+      // .catch(err => console.log(err));
+        
       // blob.close();
-      console.log("Sim e você?", getUploadToken['text'])
+      console.log("Sim e você?", getUploadToken)
       console.log(getUploadToken)
       //upar imagem nesse album
       const photo = await googleApi.post('/mediaItems:batchCreate',{
@@ -166,7 +204,7 @@ export default function App() {
             "description": "Event Photo",
             "simpleMediaItem": {
               "fileName": "filename",
-              "uploadToken": getUploadToken
+              "uploadToken": getUploadToken['data']
             }
           }
         ]
