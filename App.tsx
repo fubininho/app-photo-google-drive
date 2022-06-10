@@ -144,23 +144,23 @@ export default function App() {
       //   console.log(data);
       //   return data
       // });
-      const getBlobFroUri = async (uri) => {
-        const blob = await new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.onload = function () {
-            resolve(xhr.response);
-          };
-          xhr.onerror = function (e) {
-            reject(new TypeError("Network request failed"));
-          };
-          xhr.responseType = "blob";
-          xhr.open("GET", uri, true);
-          xhr.send(null);
-        });
+      // const getBlobFroUri = async (uri) => {
+      //   const blob = await new Promise((resolve, reject) => {
+      //     const xhr = new XMLHttpRequest();
+      //     xhr.onload = function () {
+      //       resolve(xhr.response);
+      //     };
+      //     xhr.onerror = function (e) {
+      //       reject(new TypeError("Network request failed"));
+      //     };
+      //     xhr.responseType = "blob";
+      //     xhr.open("GET", uri, true);
+      //     xhr.send(null);
+      //   });
 
-        return blob;
-      };
-      const blob = getBlobFroUri(image?.uri)
+      //   return blob;
+      // };
+      const blob = await fetch(image.uri).blob();
       console.log(blob)
       // const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
       // console.log(base64)
@@ -178,9 +178,7 @@ export default function App() {
 
       const getUploadToken = await fetch('https://photoslibrary.googleapis.com/v1/uploads',{
         method: 'POST',
-        body: {
-          'media-binary-data': blob,
-        },
+        body: blob,
         headers: {
           'Content-Type': 'application/octet-stream',
           // 'X-Goog-Upload-File-Name': "name.jpg",
