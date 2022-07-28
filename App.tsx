@@ -19,6 +19,8 @@ import * as FileSystem from 'expo-file-system';
 // import { useAutoDiscovery } from 'expo-auth-session';
 // import { Buffer } from 'buffer'
 // const RFNS = require('react-native-fs')
+import { utf8toBin, binToUtf8 } from 'utf8-binary';
+
 
 export default function App() {
 
@@ -41,7 +43,8 @@ export default function App() {
     expoClientId: '330310690010-1sftd7h176igv51umi1c76dcbbt9pbgv.apps.googleusercontent.com',
     usePKCE: false,
     prompt: 'consent',
-    scopes: ['https://www.googleapis.com/auth/photoslibrary','https://www.googleapis.com/auth/photoslibrary.appendonly','https://www.googleapis.com/auth/photoslibrary.sharing'],
+    scopes: ['https://www.googleapis.com/auth/photoslibrary','https://www.googleapis.com/auth/photoslibrary.appendonly','https://www.googleapis.com/auth/photoslibrary.sharing',
+    "https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive.appdata"],
     // redirectUri: "exp://127.0.0.1:19000/",
   }, );
 
@@ -49,7 +52,7 @@ export default function App() {
   React.useEffect(() => {
     if (response?.type === 'success'){
       setAccessToken(response.authentication.accessToken)
-      setAsyncStorage('google_access_token',accessToken)
+      setAsyncStorage('google_access_token',response.authentication.accessToken)
       console.log(response)
     }
   }, [response])
@@ -101,25 +104,35 @@ export default function App() {
   async function uploadToDrive() {
     try {
       // console.log(image)
-      const uri = image?.uri
-      console.log("Oi")
+      // const uri = image?.uri
+      // console.log("Oi")
       //fazer um album
       // permitir aceesso do app à google photos api: https://console.developers.google.com/apis/api/photoslibrary.googleapis.com/overview?project=330310690010
       // criar usuário teste
-      const album = await googleApi.post('/albums',{
-        "album": {
-          "title": "new-album"
-        }}, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-        // "isWriteable": true
-      })
-      console.log("Tudo bem?")
+      // const album = await googleApi.post('/albums',{
+      //   "album": {
+      //     "title": "fordasijasojfda"
+      //   }}, {
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   }
+      //   // "isWriteable": true
+      // })
+      // console.log(album.data.id)
+
+      // const shareAlbum = await googleApi.post('/albums/'+album.data.id+':share',{},
+      // {
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   }
+      // })
+
+      // console.log("Tudo bem?")
       
       // preciso acessar a photo, não só o uri
       // TODO: Falta só arrumar isso aqui mesmo
-      // const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
+      // const bin = convertByte(utf8);
+      // console.log(bin)
       // let your_bytes = Buffer.from(base64, "base64");
       // const response = await fetch(image.uri)
       // const blob = await response.blob()
@@ -160,13 +173,21 @@ export default function App() {
 
       //   return blob;
       // };
-      const blob = await fetch(image.uri).blob();
-      console.log(blob)
+      // const blob = await getBlobFroUri(image.uri);
+      // const blob = await fetch(image.uri).blob();
+      // console.log(blob)
+      // const data = new FormData();
+      // data.append("uploadFile", {
+      //   "name": "filename",
+      //   "type": image.type,
+      //   "uri": image.uri
+      // });
+      // console.log(data)
       // const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
       // console.log(base64)
 
       // const getUploadToken = await googleApi.post('/uploads',{
-      //     "media-binary-data": base64,
+      //     utf8,
       //   }, {
       //     headers: {
       //       'Content-Type': 'application/octet-stream',
@@ -176,38 +197,95 @@ export default function App() {
       //     }
       //   })
 
-      const getUploadToken = await fetch('https://photoslibrary.googleapis.com/v1/uploads',{
-        method: 'POST',
-        body: blob,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          // 'X-Goog-Upload-File-Name': "name.jpg",
-          'X-Goog-Upload-Protocol': 'raw',
-          'X-Goog-Upload-Content-Type': 'image/jpeg',
-          'Authorization': 'Bearer ' + accessToken
-        },
-      })
+      // const getUploadToken = await fetch('https://photoslibrary.googleapis.com/v1/uploads',{
+      //   method: 'POST',
+      //   body: base64,
+      //   headers: {
+      //     'Content-Type': 'application/octet-stream',
+      //     // 'X-Goog-Upload-File-Name': "name.jpg",
+      //     'X-Goog-Upload-Protocol': 'raw',
+      //     'X-Goog-Upload-Content-Type': 'image/jpeg',
+      //     'Authorization': 'Bearer ' + accessToken
+      //   },
+      // })
       // .then(response => response.json)
       // .then(json => console.log(json))
       // .catch(err => console.log(err));
         
       // blob.close();
-      console.log("Sim e você?", getUploadToken)
-      console.log(getUploadToken)
+      // console.log("Sim e você?",getUploadToken.data)
+      // console.log("Sim e você?",getUploadToken._response)
+      // console.log(getUploadToken)
       //upar imagem nesse album
-      const photo = await googleApi.post('/mediaItems:batchCreate',{
-        "albumId": album["id"],
-        "newMediaItems": [
-          {
-            "description": "Event Photo",
-            "simpleMediaItem": {
-              "fileName": "filename",
-              "uploadToken": getUploadToken['data']
-            }
-          }
-        ]
-      }) 
-      console.log("Também",photo)
+      // const photo = await googleApi.post('/mediaItems:batchCreate',{
+      //   "albumId": album.data.id,
+      //   "newMediaItems": [
+      //     {
+      //       "description": "Event Photo",
+      //       "simpleMediaItem": {
+      //         "fileName": "filename",
+      //         "uploadToken": getUploadToken["data"]
+      //       }
+      //     }
+      //   ]
+      // }) 
+      // console.log("Também", photo._response.newMediaItemsResults)
+      console.log(image)
+
+      const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
+      // GOOGLE DRIVE
+      /**
+       * Change Scopes on https://console.cloud.google.com/apis/credentials/consent?project=crested-pursuit-350121
+       * Scopes: https://www.googleapis.com/auth/drive, https://www.googleapis.com/auth/drive.file, https://www.googleapis.com/auth/drive.appdata
+       */
+      //create folder
+      const folder = await googleApi.post('/files',{
+        "mimeType": "application/vnd.google-apps.folder",
+        "name": "Escudo0.png",
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+        // "isWriteable": true
+      })
+      const folder_id = folder.data.id;
+      console.log(folder_id)
+
+      //upload photo
+      // const Photo = await googleApi.post('/files?uploadType=simple',{
+      //   base64,
+      //   "mimeType": "image/jpeg",
+      //   "name": "Juve.jpg",
+      //   "parents": [folder_id]
+      // }, {
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   }
+      //   // "isWriteable": true
+      // })
+      const first_step = await googleApi.post('/files?uploadType=resumable',{
+        "mimeType": "image/png",
+        "name": "Turing0.png",
+        "parents": [folder_id]
+      }, {
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        }
+      })
+      console.log(first_step.data)
+      
+      const upload_id = first_step.data.id;
+      const second_step = await googleApi.put(`files?uploadType=resumable&upload_id=[${upload_id}]`,{
+        base64
+      }, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Lenght': 2000000,
+        }
+      })
+      console.log(second_step)
+      
+
 
     } catch (err: any) {
       if (err.response) {
