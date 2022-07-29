@@ -39,4 +39,23 @@ googleApi.interceptors.request.use(
   }
 );
 
-export {googleApi};
+const googleApiUpload = axios.create({
+  baseURL: 'https://www.googleapis.com/upload/drive/v3'
+})
+
+googleApiUpload.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('google_access_token');
+    // const expo_client_id = await AsyncStorage.getItem('expo_client_id');
+    if(token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // config.headers['Content-Type'] ='application/json';
+    return config;
+  },
+  (err) => {
+    return Promise.reject(err);
+  }
+);
+
+export {googleApi,googleApiUpload};

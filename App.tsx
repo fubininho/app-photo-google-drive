@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import * as Google from 'expo-auth-session/providers/google';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {googleApi} from '../app-photo-google-drive/api/request';
+import {googleApi,googleApiUpload} from '../app-photo-google-drive/api/request';
 import * as FileSystem from 'expo-file-system';
 // import { useAutoDiscovery } from 'expo-auth-session';
 // import { Buffer } from 'buffer'
@@ -241,7 +241,7 @@ export default function App() {
       //create folder
       const folder = await googleApi.post('/files',{
         "mimeType": "application/vnd.google-apps.folder",
-        "name": "Escudo0.png",
+        "name": "Desayuno1",
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -252,38 +252,60 @@ export default function App() {
       console.log(folder_id)
 
       //upload photo
-      // const Photo = await googleApi.post('/files?uploadType=simple',{
+      // const trys = await googleApiUpload.post('/files?uploadType=simple',{
       //   base64,
-      //   "mimeType": "image/jpeg",
-      //   "name": "Juve.jpg",
-      //   "parents": [folder_id]
+      //   // "mimeType": "image/jpeg",
+      //   // "name": "Juve.jpg",
+      //   // "parents": [folder_id]
       // }, {
       //   headers: {
-      //     'Content-Type': 'application/json',
+      //     'Content-Type': 'image/jpeg',
       //   }
       //   // "isWriteable": true
       // })
-      const first_step = await googleApi.post('/files?uploadType=resumable',{
-        "mimeType": "image/png",
-        "name": "Turing0.png",
+      // console.log(trys)
+
+      // const multipart = await  googleApiUpload.post('/files?uploadType=multipart',{
+      //   "name": "Desayuno.jpg",
+      //   "parents": [folder_id],
+      //   "media": {
+      //     "body": base64,
+      //     "mimeType": "image/jpeg",
+      //   }
+      // }, {
+      //   headers: {
+      //     'Content-Type': 'application/json; charset=UTF-8',
+      //   }
+      // })
+      // console.log(multipart)
+
+      const first_step = await googleApiUpload.post('/files?uploadType=resumable',{
+        "mimeType": "image/jpeg",
+        "name": "Desayuno.jpg",
         "parents": [folder_id]
       }, {
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         }
       })
-      console.log(first_step.data)
+      console.log(first_step.headers.location)
       
-      const upload_id = first_step.data.id;
-      const second_step = await googleApi.put(`files?uploadType=resumable&upload_id=[${upload_id}]`,{
-        base64
-      }, {
-        headers: {
-          'Content-Type': 'image/png',
-          'Content-Lenght': 2000000,
-        }
-      })
-      console.log(second_step)
+      let upload_route = first_step.headers.location;
+      upload_route = upload_route.split('v3/')[1];
+      
+      let counter = 0
+      while (counter < base64.length){
+        counter += 56;
+        const second_step = await googleApiUpload.put(upload_route,{
+          base64
+        }, {
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'Content-Lenght': 2000000,
+          }
+        })
+        console.log(second_step)
+      }
       
 
 
