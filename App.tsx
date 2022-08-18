@@ -19,7 +19,11 @@ import * as FileSystem from 'expo-file-system';
 // import { useAutoDiscovery } from 'expo-auth-session';
 // import { Buffer } from 'buffer'
 // const RFNS = require('react-native-fs')
-import { utf8toBin, binToUtf8 } from 'utf8-binary';
+// import { utf8toBin, binToUtf8 } from 'utf8-binary';
+// const {GoogleAuth} = require('google-auth-library');
+// const {google} = require('googleapis');
+const Buffer = require('buffer').Buffer
+
 
 
 export default function App() {
@@ -183,7 +187,7 @@ export default function App() {
       //   "uri": image.uri
       // });
       // console.log(data)
-      // const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
+      let base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
       // console.log(base64)
 
       // const getUploadToken = await googleApi.post('/uploads',{
@@ -230,9 +234,9 @@ export default function App() {
       //   ]
       // }) 
       // console.log("Também", photo._response.newMediaItemsResults)
-      console.log(image)
+      // console.log(image)
 
-      const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
+      // const base64 = await JSON.stringify(FileSystem.readAsStringAsync(image.uri, { encoding: 'base64' }));
       // GOOGLE DRIVE
       /**
        * Change Scopes on https://console.cloud.google.com/apis/credentials/consent?project=crested-pursuit-350121
@@ -241,7 +245,7 @@ export default function App() {
       //create folder
       const folder = await googleApi.post('/files',{
         "mimeType": "application/vnd.google-apps.folder",
-        "name": "Desayuno1",
+        "name": "Brasil",
       }, {
         headers: {
           'Content-Type': 'application/json',
@@ -249,7 +253,7 @@ export default function App() {
         // "isWriteable": true
       })
       const folder_id = folder.data.id;
-      console.log(folder_id)
+      // console.log(folder_id)
 
       //upload photo
       // const trys = await googleApiUpload.post('/files?uploadType=simple',{
@@ -266,23 +270,55 @@ export default function App() {
       // console.log(trys)
 
       // const multipart = await  googleApiUpload.post('/files?uploadType=multipart',{
-      //   "name": "Desayuno.jpg",
-      //   "parents": [folder_id],
-      //   "media": {
-      //     "body": base64,
-      //     "mimeType": "image/jpeg",
-      //   }
+      //   "metadata": {
+      //     "name": "Tentativa.jpg",
+      //     "parents": [folder_id],
+      //     "mimeType": 'image/jpeg',
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //     }
+      //   },
+      //   "file": {
+      //     base64,
+      //     headers:{
+      //       "Content-Type": "image/jpeg",
+      //     }
+      //   },
       // }, {
       //   headers: {
-      //     'Content-Type': 'application/json; charset=UTF-8',
+      //     'Content-Type': 'multipart/related; boundary=foo_bar_baz',
       //   }
       // })
       // console.log(multipart)
 
+
+      // const service = google.drive({version: 'v3', accessToken});
+      // const fileMetadata = {
+      //   'title': 'photo.jpg',
+      // };
+      // const media = {
+      //   mimeType: 'image/jpeg',
+      //   body: base64,
+      // };
+      // try {
+      //   const file = await service.files.create({
+      //     resource: fileMetadata,
+      //     media: media,
+      //     fields: 'id',
+      //   });
+      //   console.log('File Id:', file.data.id);
+      //   // return file.data.id;
+      // } catch (err) {
+      //   // TODO(developer) - Handle error
+      //   throw err;
+      // }
+
+
+
       const first_step = await googleApiUpload.post('/files?uploadType=resumable',{
         "mimeType": "image/jpeg",
-        "name": "Desayuno.jpg",
-        "parents": [folder_id]
+        "name": "Brasil.jpg",
+        "parents": [folder_id],
       }, {
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
@@ -291,21 +327,27 @@ export default function App() {
       console.log(first_step.headers.location)
       
       let upload_route = first_step.headers.location;
-      upload_route = upload_route.split('v3/')[1];
+      upload_route = upload_route.split('v3')[1];
+      // console.log(upload_route)
       
-      let counter = 0
-      while (counter < base64.length){
-        counter += 56;
+      // let counter = 0
+      // while (counter < base64.length){
+        // counter += 56;
+  
+        // console.log(Buffer.from(base64));
+        const data = Buffer.from(base64)
         const second_step = await googleApiUpload.put(upload_route,{
           base64
         }, {
           headers: {
             'Content-Type': 'image/jpeg',
-            'Content-Lenght': 2000000,
+            "Content-Transfer-Encoding": "base64",
+            'Content-Range': `bytes 0-${base64.length-1}/${base64.length}`,
+            'Content-Lenght': base64.length,
           }
         })
         console.log(second_step)
-      }
+      // }
       
 
 
